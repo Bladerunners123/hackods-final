@@ -1,0 +1,10 @@
+project:
+  type: default
+  output-dir: ../docs
+
+website:
+  title: "Bladerunners: Brecha de Género, Conectividad y Deserción Escolar."
+
+format:
+  dashboard:
+    toc: false

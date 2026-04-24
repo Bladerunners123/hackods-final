@@ -1,0 +1,338 @@
+/*-- scss:defaults --*/
+$body-bg: #e3e6e6;
+$body-color: #083d53;
+$primary: #083d53;
+$secondary: #266985;
+$success: #347894;
+$info: #5194b0;
+$warning: #11516b;
+$danger: #a20584;
+$light: #ffffff;
+$dark: #000000;
+$link-color: #a20584;
+$border-radius: 1.25rem;
+$card-border-radius: 1.55rem;
+$box-shadow: 0 10px 28px rgba(8, 61, 83, 0.10);
+
+/*-- scss:rules --*/
+:root {
+  --board-bg: #e3e6e6;
+  --board-surface: #ffffff;
+  --board-surface-2: #e3e6e6;
+  --board-text: #083d53;
+  --board-ink: #000000;
+  --board-primary: #083d53;
+  --board-primary-2: #11516b;
+  --board-primary-3: #266985;
+  --board-primary-4: #347894;
+  --board-primary-5: #5194b0;
+  --board-accent: #a20584;
+  --board-accent-2: #b32598;
+  --board-border: rgba(8, 61, 83, 0.16);
+  --board-shadow: 0 10px 24px rgba(8, 61, 83, 0.10);
+  --board-radius: 24px;
+}
+
+html,
+body {
+  background: var(--board-bg) !important;
+  color: var(--board-text);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  letter-spacing: 0;
+}
+
+/* ===== Header ===== */
+.quarto-dashboard #quarto-dashboard-header,
+.quarto-dashboard .navbar,
+.quarto-dashboard .navbar-brand-container {
+  background: #083d53 !important;
+  border: 0 !important;
+  box-shadow: 0 8px 20px rgba(6, 46, 61, 0.14);
+}
+
+.quarto-dashboard #quarto-dashboard-header {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.navbar-brand,
+.quarto-dashboard .navbar-title,
+.quarto-dashboard .nav-link,
+.quarto-dashboard .navbar .bi,
+.quarto-dashboard .navbar .bi-github {
+  color: #ffffff !important;
+}
+
+.quarto-dashboard .navbar .navbar-brand,
+.quarto-dashboard .navbar .navbar-title {
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.quarto-dashboard .navbar-nav {
+  gap: 0.35rem;
+}
+
+.quarto-dashboard .navbar .nav-link {
+  border-radius: 999px;
+  padding: 0.55rem 0.95rem !important;
+  font-weight: 700;
+  transition: all 0.18s ease;
+}
+
+.quarto-dashboard .navbar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.quarto-dashboard .nav-link.active,
+.quarto-dashboard .navbar .nav-item .active {
+  background: var(--board-accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 18px rgba(162, 5, 132, 0.20);
+}
+
+/* ===== Layout ===== */
+.quarto-dashboard .dashboard-page,
+.quarto-dashboard .dashboard-page-content {
+  background: transparent !important;
+}
+
+.quarto-dashboard .dashboard-page {
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.quarto-dashboard .dashboard-row {
+  gap: 1rem;
+}
+
+.quarto-dashboard .cell,
+.quarto-dashboard .dashboard-row .cell {
+  background: transparent;
+}
+
+/* ===== Sidebar ===== */
+.quarto-dashboard .sidebar,
+.quarto-dashboard .dashboard-sidebar,
+.quarto-dashboard aside.sidebar {
+  background: var(--board-surface) !important;
+  border: 5px solid var(--board-primary);
+  border-radius: 28px !important;
+  box-shadow: var(--board-shadow);
+  padding: 1.15rem 1.2rem !important;
+}
+
+.quarto-dashboard .sidebar h2,
+.quarto-dashboard .sidebar h3,
+.quarto-dashboard .dashboard-sidebar h2,
+.quarto-dashboard .dashboard-sidebar h3 {
+  color: var(--board-primary) !important;
+  font-weight: 800;
+}
+
+/* ===== Cards ===== */
+.card,
+.valuebox,
+.panel,
+.quarto-dashboard .dashboard-page .card,
+.quarto-dashboard .dashboard-row .card,
+.quarto-dashboard .cell-output-display > div:not(.plotly),
+.quarto-dashboard .cell > .card {
+  background: var(--board-surface) !important;
+  border: 0 !important;
+  border-radius: var(--board-radius) !important;
+  box-shadow: var(--board-shadow);
+  overflow: hidden;
+}
+
+.quarto-dashboard .card-header,
+.card-header {
+  background: linear-gradient(180deg, #11516b 0%, #083d53 100%) !important;
+  border: 0 !important;
+  padding: 0.95rem 1rem !important;
+}
+
+.quarto-dashboard .card-title,
+.quarto-dashboard .card-header .title,
+.card-header h3,
+.card-header h4,
+.card-header p,
+.card-header span {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  margin: 0 !important;
+}
+
+.quarto-dashboard .card-body,
+.quarto-dashboard .cell-output-display,
+.card-body {
+  padding: 1rem !important;
+}
+
+h1, h2, h3, h4, h5 {
+  color: var(--board-primary);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+h1.title {
+  color: #ffffff !important;
+}
+
+p, li {
+  color: var(--board-text);
+  line-height: 1.55;
+}
+
+/* ===== Value boxes ===== */
+.valuebox {
+  min-height: 126px;
+}
+
+.valuebox .valuebox-header,
+.valuebox .valuebox-title,
+.value-box-title {
+  color: var(--board-primary) !important;
+  font-weight: 800 !important;
+}
+
+.valuebox .valuebox-value,
+.valuebox .value,
+.value-box-value {
+  color: var(--board-primary) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0;
+}
+
+.valuebox .valuebox-icon {
+  opacity: 0.16;
+}
+
+/* ===== Narrative cards and buttons ===== */
+.hero-story,
+.story-card,
+.quarto-dashboard .card[style*="padding"] {
+  border-radius: 24px !important;
+}
+
+.btn,
+a.btn,
+.btn-report {
+  display: inline-block;
+  padding: 0.75rem 1.05rem;
+  border-radius: 999px !important;
+  font-weight: 800;
+  white-space: nowrap;
+  text-decoration: none !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.btn:hover,
+a.btn:hover,
+.btn-report:hover {
+  transform: translateY(-1px);
+  opacity: 0.97;
+}
+
+.btn-primary,
+.btn-report-primary {
+  background: var(--board-primary) !important;
+  border-color: var(--board-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 18px rgba(8, 61, 83, 0.18);
+}
+
+.btn-success,
+.btn-report-secondary {
+  background: var(--board-accent) !important;
+  border-color: var(--board-accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 18px rgba(162, 5, 132, 0.20);
+}
+
+.btn-report-outline {
+  background: #ffffff !important;
+  border: 2px solid var(--board-primary-3) !important;
+  color: var(--board-primary) !important;
+  box-shadow: 0 8px 16px rgba(8, 61, 83, 0.10);
+}
+
+/* ===== Plot containers ===== */
+.quarto-dashboard .plotly,
+.js-plotly-plot,
+.plot-container,
+svg,
+canvas {
+  border-radius: 18px;
+}
+
+.quarto-dashboard .plotly .modebar {
+  top: 10px !important;
+  right: 10px !important;
+}
+
+/* ===== Lists, emphasis, code ===== */
+ul {
+  padding-left: 1.15rem;
+}
+
+strong {
+  color: var(--board-primary);
+}
+
+code {
+  color: #84266a;
+  background: #f6f9fb;
+  border-radius: 0.35rem;
+  padding: 0.08rem 0.22rem;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 992px) {
+  .quarto-dashboard .navbar .nav-link {
+    padding: 0.48rem 0.85rem !important;
+  }
+
+  .quarto-dashboard .sidebar,
+  .quarto-dashboard .dashboard-sidebar,
+  .quarto-dashboard aside.sidebar {
+    border-width: 4px;
+    border-radius: 24px !important;
+  }
+
+  .card,
+  .valuebox,
+  .panel,
+  .quarto-dashboard .dashboard-page .card,
+  .quarto-dashboard .dashboard-row .card {
+    border-radius: 22px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .quarto-dashboard .dashboard-page-content {
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+  }
+
+  .quarto-dashboard .navbar-brand,
+  .quarto-dashboard .navbar-title {
+    font-size: 1rem;
+  }
+
+  .quarto-dashboard .card-body,
+  .quarto-dashboard .cell-output-display,
+  .card-body {
+    padding: 0.9rem !important;
+  }
+}

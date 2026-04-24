@@ -1,0 +1,432 @@
+---
+title: "Bladerunners: Brecha de Género, Conectividad y Deserción Escolar."
+format:
+  dashboard:
+    theme: custom.scss
+execute:
+  echo: false
+  warning: false
+  message: false
+jupyter: python3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{python}
+from pathlib import Path
+import json
+
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
+DATA_DIR = Path("..") / "datos" / "processed"
+GEO_PATH = Path("mexico_states.geojson")
+
+palette = {
+    "ink": "#000000",
+    "base_dark": "#083d53",
+    "base": "#11516b",
+    "base_2": "#266985",
+    "base_3": "#347894",
+    "base_4": "#5194b0",
+    "mist": "#e3e6e6",
+    "white": "#ffffff",
+    "gender": "#a20584",
+    "gender_2": "#b32598",
+}
+
+datos = pd.read_csv(DATA_DIR / "datos_estados.csv")
+coeficientes = pd.read_csv(DATA_DIR / "coeficientes_modelo.csv")
+correlaciones = pd.read_csv(DATA_DIR / "correlaciones_abandono.csv")
+brecha_genero = pd.read_csv(DATA_DIR / "brecha_genero_estados.csv")
+
+cve_to_geo = {
+    1: "MX-AGU",
+    2: "MX-BCN",
+    3: "MX-BCS",
+    4: "MX-CAM",
+    5: "MX-COA",
+    6: "MX-COL",
+    7: "MX-CHP",
+    8: "MX-CHH",
+    9: "MX-CMX",
+    10: "MX-DUR",
+    11: "MX-GUA",
+    12: "MX-GRO",
+    13: "MX-HID",
+    14: "MX-JAL",
+    15: "MX-MEX",
+    16: "MX-MIC",
+    17: "MX-MOR",
+    18: "MX-NAY",
+    19: "MX-NLE",
+    20: "MX-OAX",
+    21: "MX-PUE",
+    22: "MX-QUE",
+    23: "MX-ROO",
+    24: "MX-SLP",
+    25: "MX-SIN",
+    26: "MX-SON",
+    27: "MX-TAB",
+    28: "MX-TAM",
+    29: "MX-TLA",
+    30: "MX-VER",
+    31: "MX-YUC",
+    32: "MX-ZAC",
+}
+
+with GEO_PATH.open(encoding="utf-8") as fh:
+    mexico_geo = json.load(fh)
+
+geo_ids = {feature["id"] for feature in mexico_geo["features"]}
+
+datos["sin_internet_pct"] = 100 - datos["internet_hogares_pct"]
+datos["indice_vulnerabilidad"] = (
+    (datos["pobreza_pct"] + datos["sin_internet_pct"]) / 2
+).round(2)
+datos["geo_id"] = datos["cve_ent"].map(cve_to_geo)
+
+missing_geo = datos.loc[datos["geo_id"].isna(), "estado"].tolist()
+missing_shape = sorted(set(datos["geo_id"].dropna()) - geo_ids)
+if missing_geo or missing_shape:
+    raise ValueError(
+        f"Estados sin geometria: {missing_geo}. IDs no encontrados en GeoJSON: {missing_shape}"
+    )
+
+top_ive = datos.nlargest(5, "indice_vulnerabilidad").sort_values("indice_vulnerabilidad")
+estado_lider_ive = top_ive.iloc[-1]
+estado_lider_nombre = estado_lider_ive["estado"]
+estado_lider_ive_val = f"{estado_lider_ive['indice_vulnerabilidad']:.1f}"
+estado_lider_pobreza = f"{estado_lider_ive['pobreza_pct']:.1f}"
+estado_lider_sin_internet = f"{estado_lider_ive['sin_internet_pct']:.1f}"
+
+coefs_m2 = (
+    coeficientes.loc[coeficientes["modelo"] == "Modelo 2", ["termino", "estimacion"]]
+    .set_index("termino")["estimacion"]
+    .to_dict()
+)
+
+datos["abandono_predicho"] = (
+    coefs_m2.get("Intercept", 0)
+    + coefs_m2.get("pobreza_pct", 0) * datos["pobreza_pct"]
+    + coefs_m2.get("internet_hogares_pct", 0) * datos["internet_hogares_pct"]
+    + coefs_m2.get("rezago_edu_pct", 0) * datos["rezago_edu_pct"]
+).round(2)
+
+coeficientes_modelo_2 = (
+    coeficientes.loc[
+        (coeficientes["modelo"] == "Modelo 2")
+        & (coeficientes["termino"] != "Intercept"),
+        ["termino", "estimacion", "p_value"],
+    ]
+    .assign(abs_estimacion=lambda df: df["estimacion"].abs())
+    .sort_values("abs_estimacion", ascending=False)
+)
+
+termino_labels = {
+    "pobreza_pct": "Pobreza",
+    "internet_hogares_pct": "Acceso a internet",
+    "rezago_edu_pct": "Rezago educativo",
+}
+
+top_coef_terms = [
+    termino_labels.get(term, term)
+    for term in coeficientes_modelo_2["termino"].head(2).tolist()
+]
+
+top_corr = correlaciones.sort_values("r_pearson", key=lambda s: s.abs(), ascending=False).iloc[0]
+top_corr_label = {
+    "brecha_genero": "Brecha de genero",
+    "internet_hogares_pct": "Acceso a internet",
+    "pobreza_pct": "Pobreza",
+    "pobreza_ext_pct": "Pobreza extrema",
+    "rezago_edu_pct": "Rezago educativo",
+}.get(top_corr["variable"], top_corr["variable"])
+top_corr_r = float(top_corr["r_pearson"])
+top_corr_r_text = f"{top_corr_r:.3f}"
+
+brecha_top = brecha_genero.iloc[0]
+brecha_genero_top = float(brecha_top["brecha_genero"])
+genero_mas_afectado = "hombres" if brecha_genero_top > 0 else "mujeres"
+brecha_top_estado = brecha_top["estado"]
+brecha_top_abs = f"{abs(brecha_genero_top):.1f}"
+
+brecha_plot = pd.DataFrame(
+    {
+        "genero": ["Hombres", "Mujeres"],
+        "abandono": [brecha_top["abandono_hombres"], brecha_top["abandono_mujeres"]],
+    }
+)
+
+coef_tabla = (
+    coeficientes_modelo_2.assign(
+        variable=lambda df: df["termino"].map(termino_labels),
+        estimacion=lambda df: df["estimacion"].map(lambda v: f"{v:.3f}"),
+        p_value=lambda df: df["p_value"].map(lambda v: f"{v:.3f}"),
+    )[["variable", "estimacion", "p_value"]]
+    .rename(columns={"variable": "Variable", "estimacion": "Estimador", "p_value": "p-valor"})
+)
+```
+
+# Contexto {.sidebar}
+
+Este tablero analiza y busca predecir el abandono escolar a nivel medio superior buscando soluciones que contengan y disminuyan el abandono escolar analizando una posible brecha de género, probreza y carencias estructurales como la cobertura de internet.
+
+Intentamos localizar primero los estados con mayor vulnerabilidad, confirmar el patron territorial, revisar el indicador predictivo más fuerte y cerrar con la brecha de genero.
+
+**Ruta de lectura**
+
+-   `Top 5 IVE`: donde conviene actuar primero.
+-   `Mapa IVE`: donde se concentra la fractura territorial.
+-   `Prediccion`: que indicador estadistico acompana más al abandono.
+-   `Brecha de genero`: a quien golpea más el abandono.
+-   `Metodologia`: como se estimaron los indicadores.
+-   `Reportes`: entregables para decision.
+
+**Fuentes**
+
+-   SEP / INEGI, abandono escolar en media superior por entidad y sexo, ciclo 2022-2023.
+-   CONEVAL, pobreza multidimensional y rezago educativo, 2022.
+-   ENDUTIH, acceso a internet en hogares, 2023.
+
+# Top 5 estados con mayor IVE
+
+## Row {height="68%"}
+
+### Vulnerabilidad estructural más alta
+
+```{python}
+fig_top_ive = go.Figure(
+    go.Bar(
+        x=top_ive["indice_vulnerabilidad"],
+        y=top_ive["estado"],
+        orientation="h",
+        marker=dict(
+            color=[
+                palette["gender"] if estado == estado_lider_nombre else palette["base_3"]
+                for estado in top_ive["estado"]
+            ],
+            line=dict(color=palette["white"], width=1.3),
+        ),
+        text=top_ive["indice_vulnerabilidad"].map(lambda v: f"{v:.1f}"),
+        textposition="outside",
+        hovertemplate="<b>%{y}</b><br>IVE: %{x:.1f}<extra></extra>",
+    )
+)
+_ = fig_top_ive.update_layout(
+    paper_bgcolor=palette["white"],
+    plot_bgcolor=palette["white"],
+    margin=dict(l=10, r=35, t=8, b=8),
+    xaxis_title="Indice de Vulnerabilidad Educativa (IVE)",
+    yaxis_title="",
+    font=dict(color=palette["base_dark"]),
+    showlegend=False,
+)
+_ = fig_top_ive.update_xaxes(gridcolor="#e3e6e6", zeroline=False)
+_ = fig_top_ive.update_yaxes(categoryorder="array", categoryarray=top_ive["estado"])
+fig_top_ive
+```
+
+**`{python} estado_lider_nombre`** es el primer punto de actuacion: registra un `IVE` de **`{python} estado_lider_ive_val`**, con **`{python} estado_lider_pobreza`% de pobreza** y **`{python} estado_lider_sin_internet`% de hogares sin internet**. El abandono no aparece aislado, está donde la pobreza, la desconexión y el rezago hacen que permanecer en la escuela sea mas dificil.
+
+Este top 5 nos muestra que si hay que iniciar programas pilotos de retencion, el primer territorio es Chiapas.
+
+# Mapa nacional del IVE
+
+## Row {height="68%"}
+
+### El mayor IVE se concentra en el sur y sureste
+
+```{python}
+hover_map = datos.apply(
+    lambda row: (
+        f"{row['estado']}<br>"
+        f"IVE: {row['indice_vulnerabilidad']:.1f}<br>"
+        f"Pobreza: {row['pobreza_pct']:.1f}%<br>"
+        f"Hogares sin internet: {row['sin_internet_pct']:.1f}%<br>"
+        f"Abandono observado: {row['abandono_total']:.1f}%"
+    ),
+    axis=1,
+)
+
+fig_mapa = go.Figure(
+    go.Choropleth(
+        geojson=mexico_geo,
+        locations=datos["geo_id"],
+        z=datos["indice_vulnerabilidad"],
+        featureidkey="id",
+        text=datos["estado"],
+        hovertext=hover_map,
+        hoverinfo="text",
+        colorscale=[
+            [0.0, palette["mist"]],
+            [0.35, palette["base_4"]],
+            [0.62, palette["base_2"]],
+            [0.82, palette["base"]],
+            [1.0, palette["gender"]],
+        ],
+        marker_line_color=palette["white"],
+        marker_line_width=0.9,
+        colorbar=dict(title="IVE", len=0.72, thickness=14),
+    )
+)
+_ = fig_mapa.update_geos(
+    fitbounds="locations",
+    visible=False,
+    bgcolor="rgba(0,0,0,0)",
+)
+_ = fig_mapa.update_layout(
+    paper_bgcolor=palette["white"],
+    margin=dict(l=0, r=0, t=5, b=0),
+    font=dict(color=palette["base_dark"]),
+)
+fig_mapa
+```
+
+La concentracion territorial nos confirma que los visto en el top 5: el mayor riesgo estructural se acumula en el sur y sureste, donde la pobreza y la baja conectividad empujan fuera de la escuela antes de que el sistema alcance pueda apoyar.
+
+Esta lectura conecta el `ODS 4` con `ODS 1`, `ODS 8` y `ODS 10`: retener estudiantes en media superior tambien es proteger el desarrollo económico regional.
+
+# Prediccion del abandono
+
+## Row {height="68%"}
+
+### Indicador estadistico más fuerte
+
+```{python}
+fig_corr = go.Figure(
+    go.Bar(
+        x=[top_corr_r],
+        y=[top_corr_label],
+        orientation="h",
+        marker=dict(color=palette["gender"], line=dict(color=palette["white"], width=1.3)),
+        text=[top_corr_r_text],
+        textposition="outside",
+        hovertemplate="<b>%{y}</b><br>r de Pearson: %{x:.3f}<extra></extra>",
+    )
+)
+_ = fig_corr.add_vline(x=0, line_width=1, line_color=palette["base_dark"])
+_ = fig_corr.update_layout(
+    paper_bgcolor=palette["white"],
+    plot_bgcolor=palette["white"],
+    margin=dict(l=10, r=45, t=8, b=8),
+    xaxis_title="Correlacion de Pearson con abandono total",
+    yaxis_title="",
+    font=dict(color=palette["base_dark"]),
+    showlegend=False,
+)
+_ = fig_corr.update_xaxes(range=[-1, 1], gridcolor="#e3e6e6", zeroline=False)
+fig_corr
+```
+
+Se elaboro la matriz completa de correlacion, pero aqui se conserva solo el indicador más fuerte: **`{python} top_corr_label`** con **`{python} top_corr_r_text`**. Esto nos permite enfocar el abandono por sexo; por eso se acompana con el modelo exploratorio y con el `IVE`.
+
+El modelo de prediccion usado fue:
+
+$$
+\widehat{A_i} = \beta_0 + \beta_1 P_i + \beta_2 I_i + \beta_3 R_i
+$$
+
+Con los estimadores del `Modelo 2`:
+
+$$
+\widehat{A_i} = 8.113 + 0.047P_i + 0.031I_i - 0.109R_i
+$$
+
+Donde $A_i$ es abandono, $P_i$ es pobreza, $I_i$ es acceso a internet en hogares y $R_i$ es rezago educativo. Los mayores coeficientes absolutos son **`{python} top_coef_terms[0]`** y **`{python} top_coef_terms[1]`**; aunque pobreza, internet y rezago tienen correlaciones individuales pequenas, juntas describen la vulnerabilidad que el tablero busca anticipar.
+
+# Brecha de genero
+
+## Row {height="68%"}
+
+### Mayor brecha estatal por sexo
+
+```{python}
+fig_brecha = go.Figure(
+    go.Bar(
+        x=brecha_plot["genero"],
+        y=brecha_plot["abandono"],
+        marker=dict(
+            color=[palette["base_3"], palette["gender_2"]],
+            line=dict(color=palette["white"], width=1.3),
+        ),
+        text=brecha_plot["abandono"].map(lambda v: f"{v:.1f}%"),
+        textposition="outside",
+        hovertemplate="%{x}<br>Abandono: %{y:.1f}%<extra></extra>",
+    )
+)
+_ = fig_brecha.update_layout(
+    paper_bgcolor=palette["white"],
+    plot_bgcolor=palette["white"],
+    margin=dict(l=10, r=10, t=8, b=8),
+    xaxis_title="",
+    yaxis_title="Abandono en media superior (%)",
+    font=dict(color=palette["base_dark"]),
+    showlegend=False,
+)
+_ = fig_brecha.update_yaxes(gridcolor="#e3e6e6", zeroline=False)
+fig_brecha
+```
+
+La mayor brecha aparece en **`{python} brecha_top_estado`**, con **`{python} brecha_top_abs` puntos porcentuales** de diferencia. El abandono es más alto en **`{python} genero_mas_afectado`**, por lo que la respuesta de retencion debe mirar tambien a quien se esta perdiendo , no solo en que estado ocurre.
+
+Este segmento conecta la prediccion con el `ODS 5`: y nos permite distingir como cambia el riesgo por genero.
+
+# Metodologia
+
+## Row {height="100%"}
+
+### Matematica y modelos usados
+
+El tablero integra datos oficiales de abandono escolar, pobreza, rezago educativo y conectividad. La unidad de analisis es la entidad federativa $i$.
+
+**Indice de Vulnerabilidad Educativa**
+
+$$
+IVE_i = \frac{Pobreza_i + (100 - Internet_i)}{2}
+$$
+
+**Brecha de genero**
+
+$$
+BG_i = AbandonoHombres_i - AbandonoMujeres_i
+$$
+
+**Correlacion exploratoria**
+
+$$
+r_{x,y} = \frac{\sum_i (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_i (x_i - \bar{x})^2}\sqrt{\sum_i (y_i - \bar{y})^2}}
+$$
+
+**Modelos de regresion estimados por minimos cuadrados ordinarios**
+
+$$
+\widehat{\beta} = \arg\min_{\beta}\sum_i(A_i - X_i\beta)^2
+$$
+
+$$
+Modelo\ 1: A_i = \beta_0 + \beta_1P_i + \beta_2I_i + \epsilon_i
+$$
+
+$$
+Modelo\ 2: A_i = \beta_0 + \beta_1P_i + \beta_2I_i + \beta_3R_i + \epsilon_i
+$$
+
+**Nota para lectura de estimadores**
+
+Los coeficientes se interpretan como cambios esperados en el abandono ante variaciones de un punto porcentual en cada variable, manteniendo las demás constantes dentro del modelo. Esto nos ayuda a priorizar alertas y programas pilotos de retencion, pero no prueba causalidad por si solo.
+
+Esto nos permite enfocar los programas de educación públicos con el objetivo de mover al sistema y reaccionar cuando anticipadamente y tener presente en donde conviene invertir primero.
+
+# Reportes descargables
+
+## Row
+
+### Entregables para decision
+
+::: report-actions
+[Reporte Excel](reportes/reporte_dashboard_completo.xlsx){.btn .btn-report-primary} [Zonas criticas CSV](reportes/zonas_criticas.csv){.btn .btn-report-secondary} [Metadatos](metadata.md){.btn .btn-report-outline}
+:::
+
+Los reportes convierten el tablero en una herramienta de trabajo para revisar la metodologia, reutilizar los datos tabulados y ayudar en la preparación de programas piloto de retencion y en la toma de decisiones basadas en datos.

@@ -1,0 +1,8 @@
+pandas
+numpy
+plotly
+statsmodels
+jupyter
+ipykernel
+openpyxl
+xlsxwriter
