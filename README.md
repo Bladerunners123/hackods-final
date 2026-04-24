@@ -140,6 +140,19 @@ La carpeta `docs/` ya contiene una versión lista para compartir:
 - `docs/reportes/reporte_dashboard_completo.xlsx`: reporte consolidado;
 - `docs/reportes/zonas_criticas.csv`: exportación de entidades prioritarias.
 
+## Publicar en GitHub Pages
+
+El repositorio ya quedó listo para desplegar el tablero en GitHub Pages usando GitHub Actions.
+
+1. Sube el contenido a un repositorio en GitHub.
+2. En GitHub, entra a `Settings > Pages`.
+3. En `Source`, selecciona `GitHub Actions`.
+4. Haz push a la rama `main`.
+
+El workflow [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) instalará dependencias, renderizará `dashboard/index.qmd`, conservará la salida en `docs/` y publicará el sitio automáticamente.
+
+El archivo [`docs/.nojekyll`](docs/.nojekyll) evita que GitHub Pages procese el sitio con Jekyll y ayuda a que los assets estáticos del dashboard se sirvan sin interferencias.
+
 ## Fuentes de datos
 
 - INEGI / SEP: abandono escolar en media superior por entidad y sexo, ciclo 2022-2023.
